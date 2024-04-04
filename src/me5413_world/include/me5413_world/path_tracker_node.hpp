@@ -55,6 +55,13 @@ class PathTrackerNode
   double computeStanelyControl(const double heading_error, const double cross_track_error, const double velocity);
   geometry_msgs::Twist computeControlOutputs(const nav_msgs::Odometry& odom_robot, const geometry_msgs::Pose& pose_goal);
 
+  // My Control
+  double computeFeedbackKeppa(const double distance, const double heading_error, const double goal_heading);
+  double computeFeedbackSpeed(const double keppa, const double max_vel, const double miu, const double lambda);
+  geometry_msgs::Twist computeFeedbackControl(const nav_msgs::Odometry& odom_robot, const geometry_msgs::Pose& pose_goal);
+
+  geometry_msgs::Twist purepursuit(const nav_msgs::Odometry& odom_robot, const geometry_msgs::Pose& pose_goal);
+
   // ROS declaration
   ros::NodeHandle nh_;
   ros::Timer timer_;
@@ -73,7 +80,54 @@ class PathTrackerNode
   std::string robot_frame_;
   nav_msgs::Odometry odom_world_robot_;
   geometry_msgs::Pose pose_world_goal_;
+  
+  // Controllers
+  control::PID pid_;
+};
 
+// Pursuit
+
+class MyPathTrackerNode
+{
+ public:
+  MyPathTrackerNode();
+  virtual ~MyPathTrackerNode() {};
+
+ private:
+  void robotOdomCallback(const nav_msgs::Odometry::ConstPtr& odom);
+  void goalPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& goal_pose);
+  void localPathCallback(const nav_msgs::Path::ConstPtr& path);
+
+  tf2::Transform convertPoseToTransform(const geometry_msgs::Pose& pose);
+  double computeStanelyControl(const double heading_error, const double cross_track_error, const double velocity);
+  geometry_msgs::Twist purePursuitOutput(const nav_msgs::Odometry& odom_robot, const nav_msgs::Path& plan_path);
+
+  // My Control
+  double computeFeedbackKeppa(const double distance, const double heading_error, const double goal_heading);
+  double computeFeedbackSpeed(const double keppa, const double max_vel, const double miu, const double lambda);
+  geometry_msgs::Twist computeFeedbackControl(const nav_msgs::Odometry& odom_robot, const geometry_msgs::Pose& pose_goal);
+
+
+  // ROS declaration
+  ros::NodeHandle nh_;
+  ros::Timer timer_;
+  ros::Subscriber sub_robot_odom_;
+  ros::Subscriber sub_local_path_;
+  ros::Publisher pub_cmd_vel_;
+
+  tf2_ros::Buffer tf2_buffer_;
+  tf2_ros::TransformListener tf2_listener_;
+  tf2_ros::TransformBroadcaster tf2_bcaster_;
+  dynamic_reconfigure::Server<me5413_world::path_trackerConfig> server;
+  dynamic_reconfigure::Server<me5413_world::path_trackerConfig>::CallbackType f;
+
+  // Robot pose
+  std::string world_frame_;
+  std::string robot_frame_;
+  nav_msgs::Odometry odom_world_robot_;
+  geometry_msgs::Pose pose_world_goal_;
+  nav_msgs::Path plan_path;
+  
   // Controllers
   control::PID pid_;
 };
